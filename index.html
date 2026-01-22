@@ -17,7 +17,6 @@
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false">
 
-      <!-- Assets -->
       <a-assets>
         <img id="Griffles" src="Griffles.png">
         <a-asset-item id="beak_top" src="beak_top.gltf"></a-asset-item>
@@ -26,14 +25,9 @@
         <a-asset-item id="tail" src="tail.gltf"></a-asset-item>
       </a-assets>
 
-      <!-- Camera (controlled by MindAR) -->
-      <a-camera
-        active="false"
-        position="0 0 0"
-        look-controls-enabled="false">
-      </a-camera>
+      <a-camera active="false" position="0 0 0" look-controls-enabled="false"></a-camera>
 
-      <!-- Face image -->
+      <!-- FACE IMAGE -->
       <a-entity mindar-face-target="anchorIndex: 1">
         <a-image
           src="#Griffles"
@@ -42,47 +36,45 @@
         </a-image>
       </a-entity>
 
-      <!-- LEFT EYEBROW (was top beak) -->
-      <a-entity mindar-face-target="anchorIndex: 65">
+      <!-- LEFT EYEBROW BEAK -->
+      <a-entity mindar-face-target="anchorIndex: 70">
         <a-gltf-model
           src="#beak_top"
-          position="0 0 0"
-          scale="0.3 0.2 0.1"
+          position="0 0 0.05"
+          scale="0.15 0.15 0.15"
           rotation="0 0 0"
           visible="true">
         </a-gltf-model>
       </a-entity>
 
-      <!-- RIGHT EYEBROW (was bottom beak) -->
-      <a-entity mindar-face-target="anchorIndex: 295">
+      <!-- RIGHT EYEBROW BEAK -->
+      <a-entity mindar-face-target="anchorIndex: 300">
         <a-gltf-model
           src="#beak_bottom"
-          position="0 0 0"
-          scale="0.3 0.2 0.1"
+          position="0 0 0.05"
+          scale="0.15 0.15 0.15"
           rotation="0 0 0"
           visible="true">
         </a-gltf-model>
       </a-entity>
 
-      <!-- Horns -->
+      <!-- HORNS -->
       <a-entity mindar-face-target="anchorIndex: 151">
         <a-gltf-model
           src="#horns"
           position="-0.05 0.4 0.3"
           scale="0.03 0.03 0.03"
-          rotation="0 0 0"
-          visible="true">
+          rotation="0 0 0">
         </a-gltf-model>
       </a-entity>
 
-      <!-- Tail -->
+      <!-- TAIL -->
       <a-entity mindar-face-target="anchorIndex: 1">
         <a-gltf-model
           src="#tail"
           position="0.4 -0.3 -0.5"
           scale="2 2 2"
-          rotation="0 0 0"
-          visible="true">
+          rotation="0 0 0">
         </a-gltf-model>
       </a-entity>
 
