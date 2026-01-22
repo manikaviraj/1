@@ -1,26 +1,134 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Face -> Pikachu</title>
-  <link rel="stylesheet" href="styles.css" />
-  <!-- TensorFlow.js and BlazeFace model -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
-</head>
-<body>
-  <main>
-    <h1>Show a Pikachu when a face is detected</h1>
-    <div id="video-wrap">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="overlay"></canvas>
-    </div>
+#!/usr/bin/env python3
+"""
+replace_faces.py
 
-    <p id="status">Loading…</p>
-    <p class="note">Add a PNG named <code>pikachu.png</code> to the site root (or update the path in <code>script.js</code>).</p>
-  </main>
+Usage:
+  python replace_faces.py --input path/to/photo.jpg --replacement replacement.png --output out.jpg
+  python replace_faces.py --webcam --replacement replacement.png
 
-  <script src="script.js"></script>
-</body>
-</html>
+Requires:
+  pip install opencv-python numpy
+"""
+import cv2
+import numpy as np
+import argparse
+import sys
+
+def load_image(path, flags=cv2.IMREAD_UNCHANGED):
+    img = cv2.imread(path, flags)
+    if img is None:
+        raise FileNotFoundError(f"Cannot load image: {path}")
+    return img
+
+def create_mask_from_image(img):
+    # img may be BGR or BGRA
+    if img.shape[2] == 4:
+        # use alpha channel
+        alpha = img[:, :, 3]
+        _, mask = cv2.threshold(alpha, 10, 255, cv2.THRESH_BINARY)
+    else:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # threshold to create mask of non-background pixels
+        _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+    return mask
+
+def replace_faces_in_image(img_bgr, replacement_bgra):
+    # Ensure replacement is BGRA or BGR with mask created
+    if replacement_bgra.shape[2] not in (3,4):
+        raise ValueError("Replacement image must have 3 or 4 channels")
+
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
+    gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30,30))
+
+    out = img_bgr.copy()
+
+    for (x, y, w, h) in faces:
+        # Optionally expand region a bit to cover more of head
+        pad_w = int(0.2 * w)
+        pad_h = int(0.3 * h)
+        x1 = max(0, x - pad_w)
+        y1 = max(0, y - pad_h)
+        x2 = min(out.shape[1], x + w + pad_w)
+        y2 = min(out.shape[0], y + h + pad_h)
+        target_w = x2 - x1
+        target_h = y2 - y1
+
+        # Resize replacement to target region
+        rep_bgr = replacement_bgra[:, :, :3]
+        rep_resized = cv2.resize(rep_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA)
+
+        # Make mask from replacement (handles alpha if present)
+        if replacement_bgra.shape[2] == 4:
+            rep_alpha = replacement_bgra[:, :, 3]
+            rep_alpha_resized = cv2.resize(rep_alpha, (target_w, target_h), interpolation=cv2.INTER_AREA)
+            mask = np.where(rep_alpha_resized > 10, 255, 0).astype('uint8')
+        else:
+            rep_gray = cv2.cvtColor(replacement_bgra, cv2.COLOR_BGR2GRAY)
+            rep_gray_resized = cv2.resize(rep_gray, (target_w, target_h), interpolation=cv2.INTER_AREA)
+            _, mask = cv2.threshold(rep_gray_resized, 10, 255, cv2.THRESH_BINARY)
+
+        # Prepare center and region for seamlessClone
+        center = (x1 + target_w // 2, y1 + target_h // 2)
+        # seamlessClone requires mask single channel and same size as source
+        try:
+            out = cv2.seamlessClone(rep_resized, out, mask, center, cv2.NORMAL_CLONE)
+        except Exception:
+            # fallback: direct overlay using mask
+            roi = out[y1:y2, x1:x2]
+            mask3 = cv2.merge([mask, mask, mask])
+            inv_mask = cv2.bitwise_not(mask3)
+            bg = cv2.bitwise_and(roi, inv_mask)
+            fg = cv2.bitwise_and(rep_resized, mask3)
+            out[y1:y2, x1:x2] = cv2.add(bg, fg)
+
+    return out, faces
+
+def process_image_file(input_path, replacement_path, output_path):
+    img = load_image(input_path, cv2.IMREAD_COLOR)
+    rep = load_image(replacement_path, cv2.IMREAD_UNCHANGED)
+    out, faces = replace_faces_in_image(img, rep)
+    cv2.imwrite(output_path, out)
+    print(f"Saved {output_path} — faces replaced: {len(faces)}")
+
+def run_webcam(replacement_path, camera_index=0):
+    rep = load_image(replacement_path, cv2.IMREAD_UNCHANGED)
+    cap = cv2.VideoCapture(camera_index)
+    if not cap.isOpened():
+        print("Cannot open webcam")
+        return
+    print("Press ESC to exit")
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        out, faces = replace_faces_in_image(frame, rep)
+        cv2.imshow("face-replaced", out)
+        key = cv2.waitKey(1) & 0xFF
+        if key == 27:  # ESC
+            break
+    cap.release()
+    cv2.destroyAllWindows()
+
+def main():
+    p = argparse.ArgumentParser(description="Replace detected faces with a replacement image.")
+    p.add_argument("--input", help="Input image path")
+    p.add_argument("--replacement", required=True, help="Replacement image path (PNG/JPG).")
+    p.add_argument("--output", help="Output path for processed image")
+    p.add_argument("--webcam", action="store_true", help="Run on webcam instead of an input file")
+    p.add_argument("--camera", type=int, default=0, help="Camera index for webcam")
+    args = p.parse_args()
+
+    if args.webcam:
+        run_webcam(args.replacement, camera_index=args.camera)
+        return
+
+    if not args.input or not args.output:
+        print("For file mode, --input and --output are required.")
+        sys.exit(1)
+    process_image_file(args.input, args.replacement, args.output)
+
+if __name__ == "__main__":
+    main()
