@@ -1,85 +1,26 @@
-<html>
-  <head>
-    <title>public-template-face</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Face -> Pikachu</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- TensorFlow.js and BlazeFace model -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
+</head>
+<body>
+  <main>
+    <h1>Show a Pikachu when a face is detected</h1>
+    <div id="video-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay"></canvas>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar@1.2.5/dist/mindar-face.prod.js"></script>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
-  </head>
+    <p id="status">Loading…</p>
+    <p class="note">Add a PNG named <code>pikachu.png</code> to the site root (or update the path in <code>script.js</code>).</p>
+  </main>
 
-  <body>
-    <a-scene
-      mindar-face
-      embedded
-      color-space="sRGB"
-      renderer="colorManagement: true, physicallyCorrectLights"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false">
-
-      <a-assets>
-        <img id="Griffles" src="Griffles.png">
-        <a-asset-item id="beak_top" src="beak_top.gltf"></a-asset-item>
-        <a-asset-item id="beak_bottom" src="beak_bottom.gltf"></a-asset-item>
-        <a-asset-item id="horns" src="horns.gltf"></a-asset-item>
-        <a-asset-item id="tail" src="tail.gltf"></a-asset-item>
-      </a-assets>
-
-      <a-camera active="false" position="0 0 0" look-controls-enabled="false"></a-camera>
-
-      <!-- FACE IMAGE -->
-      <a-entity mindar-face-target="anchorIndex: 1">
-        <a-image
-          src="#Griffles"
-          position="0.17 -0.2 0.1"
-          scale="2.7 2.7 2.7">
-        </a-image>
-      </a-entity>
-
-      <!-- LEFT EYEBROW BEAK (was anchorIndex 11) -->
-      <a-entity mindar-face-target="anchorIndex: 107">
-        <a-gltf-model
-          src="#beak_top"
-          position="-0.2 0.30 0.15"
-          scale="0.3 0.2 0.1"
-          rotation="-30 -30 0"
-          visible="true">
-        </a-gltf-model>
-      </a-entity>
-
-      <!-- RIGHT EYEBROW BEAK (was anchorIndex 14) -->
-      <a-entity mindar-face-target="anchorIndex: 336">
-        <a-gltf-model
-          src="#beak_bottom"
-          position="-0.2 0.30 0.15"
-          scale="0.3 0.2 0.1"
-          rotation="-30 -30 0"
-          visible="true">
-        </a-gltf-model>
-      </a-entity>
-
-      <!-- HORNS -->
-      <a-entity mindar-face-target="anchorIndex: 151">
-        <a-gltf-model
-          src="#horns"
-          position="-0.05 0.4 0.3"
-          scale="0.03 0.03 0.03"
-          rotation="0 0 0"
-          visible="true">
-        </a-gltf-model>
-      </a-entity>
-
-      <!-- TAIL -->
-      <a-entity mindar-face-target="anchorIndex: 1">
-        <a-gltf-model
-          src="#tail"
-          position="0.4 -0.3 -0.5"
-          scale="2 2 2"
-          rotation="0 0 0"
-          visible="true">
-        </a-gltf-model>
-      </a-entity>
-
-    </a-scene>
-  </body>
+  <script src="script.js"></script>
+</body>
 </html>
